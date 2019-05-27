@@ -14,7 +14,7 @@ Diego Telles
 #include <EEPROM.h>                                                                       //Armazenamento na memoria permanente do arduino (EEPROM)
 
 //Informações de acesso a internet
-char auth[] = "90ed4bbc8d804cfca93b8821bffd838a";
+char auth[] = "086b24b4350a42bb87d8b8f1c7a757c5";
 char ssid[] = "VIVO-4788";
 char pass[] = "C662344788";
 
