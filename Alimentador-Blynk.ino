@@ -105,7 +105,7 @@ BLYNK_WRITE(V1)
 }
 
 //Interação do usuário com o Terminal
-BLYNK_WRITE(V4)
+BLYNK_WRITE(V2)
 {
   int ValMenu = param.asInt();
   
