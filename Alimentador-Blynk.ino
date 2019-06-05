@@ -240,7 +240,104 @@ BLYNK_WRITE(V4)
     AuxMenu2 = ValMenu;
   }
   
+  else if ((ValMenu == 1) && (AuxMenu1 == 2) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Nivel Min
+    terminal.println(F(" - Nivel Min (cm)"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(NivelMin);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 2) && (AuxMenu1 == 2) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Nivel Max
+    terminal.println(F(" - Nivel Max (cm)"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(NivelMax);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 3) && (AuxMenu1 == 2) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Tempo Disparo Ultrasonico
+    terminal.println(F(" - Tempo Disparo Ultrasonico (s)"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(tmpDisp);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
   
+  else if ((AuxMenu1 == 1) && (AuxMenu2 == 1))
+  {//alterar o parâmtro Horario da alimentação
+    HorariosComer[0] = ValMenu;
+    EEPROM.write(9, HorariosComer[0]);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 1) && (AuxMenu2 == 2))
+  {//alterar o parâmtro Horario da alimentação
+    HorariosComer[1] = ValMenu;
+    EEPROM.write(10, HorariosComer[1]);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 1) && (AuxMenu2 == 3))
+  {//alterar o parâmtro Horario da alimentação
+    HorariosComer[2] = ValMenu;
+    EEPROM.write(11, HorariosComer[2]);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 1) && (AuxMenu2 == 4))
+  {//alterar o parâmtro duração da alimentação
+    duraAli = ValMenu;
+    EEPROM.write(8, duraAli);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 1) && (AuxMenu2 == 5))
+  {//alterar o parâmtro Modo
+    Modo = ValMenu;
+    EEPROM.write(7, Modo);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  
+  else if ((AuxMenu1 == 2) && (AuxMenu2 == 1))
+  {//alterar o parâmtro NivelMin
+    NivelMin = ValMenu;
+    EEPROM.write((nHoras*nInfos + 12), NivelMin);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 2) && (AuxMenu2 == 2))
+  {//alterar o parâmtro NivelMax
+    NivelMax = ValMenu;
+    EEPROM.write((nHoras*nInfos + 13), NivelMax);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+  else if ((AuxMenu1 == 2) && (AuxMenu2 == 3))
+  {//alterar o parâmtro tempo disparo
+    tmpDisp = ValMenu;
+    EEPROM.write((nHoras*nInfos + 14), tmpDisp);
+    terminal.println();
+    terminal.println(F("Parametro modificado"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
   
   else 
   {// qualquer outro valor
@@ -531,6 +628,15 @@ void setup()
   //iniciando Modo
   Modo = EEPROM.read(7);
   
+  //iniciando Duracao alimentação
+  duraAli = EEPROM.read(8);
+  
+  //Horarios de Alimentação
+  for (int i = 0 ; i < nHorarios ; i++)
+  {
+    HorariosComer[i] = EEPROM.read(9+i);
+  }
+    
   //lendo nivel
   DisparaPulsoUltrassonico();                                     //Envia pulso para o sensor
   TempoEcho = pulseIn(Echo,HIGH);                                 //Lê o tempo de retorno do sinal sonoro
