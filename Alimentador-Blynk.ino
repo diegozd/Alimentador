@@ -234,10 +234,11 @@ void LoopReal()
     AuxNivel = 0;
   }
   
+  
+  
   /*************************************************/
   /*************  MOSTRANDO VARIÁVEIS  *************/
   /*************************************************/
-  
   
   //escrevendo msg no terminal serial
   Serial.print(data, DEC);
@@ -306,7 +307,7 @@ void setup()
   Serial.println();
   
   //Pinos de saida
-  pinMode(buzzPin, OUTPUT);
+  pinMode(buzzPin, OUTPUT);     //buzz
   pinMode(MotorPin, OUTPUT);    //rele
   pinMode(Trigger, OUTPUT);     //sensor de nível ultrasonico
 
@@ -320,7 +321,7 @@ void setup()
   //iniciando Trigger do sensor de nível ultrasonico
   digitalWrite(Trigger, HIGH);  //desenergiza sensor
   
-  // Set ESP8266 baud rate
+  //Set ESP8266 baud rate
   EspSerial.begin(ESP8266_BAUD);
   delay(10);
 
@@ -360,13 +361,11 @@ void setup()
 
   //lê temperatura
   temperatura = dht.readTemperature();
+  Blynk.virtualWrite(V4, temperatura);
   
   // Setup a function to be called every second
   timer.setInterval(1000L, LoopReal);
-  
-  //escreve no app Temp
-  Blynk.virtualWrite(V4, temperatura);
-  
+
   //Escreve no terminal do app a msg de inicialização
   terminal.clear();
   terminal.println(F("Blynk v" BLYNK_VERSION ": Dispositivo iniciado"));
