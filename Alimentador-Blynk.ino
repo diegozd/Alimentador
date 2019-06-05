@@ -38,16 +38,22 @@ const float VelSomus = 0.000340;                                                
 
 //Declarando variáveis
 bool Modo = 0;                                                                            //Modo do program 0=Auto / 1=Manual
-byte HoraComer = 0;                                                                       //Hora de ligar e desligar
+bool AuxAli = 0, AuxAliBut = 0;                                                           //Auxiliar que impede a repetição de comandos
+bool ComerAgora = 0;                                                                      //Auxiliar para definir se está na hora de comer
+byte tmpDesc = 0;                                                                         //tempo a ser descontado no delay
+byte duraAli = 10;                                                                        //Tempo de duração da alimentação em (s)
+byte nHorarios = 3;                                                                       //numero de horarios no dia
+byte HorariosComer [] = {6, 15, 22};                                                      //Hora de ligar e desligar
 byte ano = 0, mes = 0, data = 0, hora = 0, minu = 0, seg = 0, DoW = 0;                    //Leitura do horario e dia
 byte mesUA = 0, diaUA = 0, horaUA = 0, minUA = 0, segUA = 0;                              //horario da ultima alimentação
 byte statusMotor = 0;                                                                     //Status de funcionamento 0=Off / 1=On
 byte valAliBut = 0;                                                                       //Leitura acionamento dos botões
 byte tmpDisp = 10;                                                                        //Tempo de disparo do som no sensor ultrasonico (us)
 byte NivelMin = 19, NivelMax = 5;                                                         //valores de distância em m para nivel minimo e máximo do sensor
-float nivel = 0;                                                                          //nivel de líquido em %
+byte AuxNivel = 0;                                                                        //Auxiliar que impede a repetição de comandos
+float nivel = 0, TempoEcho = 0, dist = 0;                                                 //nivel de líquido em %, tempo de retorno do sinal sonoro e distância da superficie da água até o senso
 float temperatura = 0, umidade = 0;                                                       //Leitura Temperaturas DHT11
-float TempoEcho = 0, dist = 0;                                                            //tempo de retorno do sinal sonoro e distância da superficie da água até o senso
+float Tcc = 0;                                                                            //Leitura Temperatura RTC
 
 
 
@@ -123,10 +129,160 @@ void LoopReal()
   /*************************************************/
   /*************      AUTOMAÇÕES       *************/
   /*************************************************/
-  if ((hora == HoraComer) && (minu == 0) && (AuxLuz == 0))
-  {//hora de ligar
-  }
  
+  for (int i = 0; i < nHorarios ; i++)
+  {
+    if (hora == HorariosComer[i]) ComerAgora = 1;
+    else ComerAgora = 0;
+  }
+  
+  if ((ComerAgora == 1) && (minu == 0) && (AuxAli == 0))
+  {//hora de alimentar as gatas
+    digitalWrite(MotorPin, LOW);  //energizo Motor
+    statusMotor = 1;
+    AuxAli = 1;  
+    
+    mesUA = mes;
+    diaUA = data;
+    horaUA = hora;
+    minUA = minu;
+    segUA = seg;
+
+    EEPROM.write(0, mesUA);
+    EEPROM.write(1, diaUA);
+    EEPROM.write(2, horaUA);
+    EEPROM.write(3, minUA);
+  }
+  else if ((ComerAgora == 1) && (minu == 0) && (seg >= (segUA + duraAli)))
+  {//passou o tempo desejado do funcionamento do motor
+    digitalWrite(MotorPin, HIGH);  //desenergizo motor
+    statusMotor = 0;
+  }
+  else if (ComerAgora == 0)
+  {
+    AuxAli = 0;  
+  }
+  
+  
+  
+  /*************************************************/
+  /*************    AÇÃO DOS BOTÕES    *************/
+  /*************************************************/
+  
+  //botão da Alimentação
+  valAliBut = digitalRead(AliBut);
+  if (valAliBut == 1)
+  {//botao foi acionado
+    tmpDesc = 50;  
+    buzzFunction(tmpDesc);    //buzz
+    digitalWrite(MotorPin, LOW);  //energizo Motor
+    statusMotor = 1;
+    AuxAliBut = 1;  
+    
+    mesUA = mes;
+    diaUA = data;
+    horaUA = hora;
+    minUA = minu;
+    segUA = seg;
+
+    EEPROM.write(0, mesUA);
+    EEPROM.write(1, diaUA);
+    EEPROM.write(2, horaUA);
+    EEPROM.write(3, minUA);
+  }
+  else if ((AuxAliBut == 1) && (seg >= (segUA + duraAli)))
+  {//passou o tempo desejado do funcionamento do motor
+    digitalWrite(MotorPin, HIGH);  //desenergizo motor
+    statusMotor = 0;
+    AuxAliBut = 0;
+  }
+  
+  
+  
+  /*************************************************/
+  /************* LEITURA DOS SENSORES  *************/
+  /*************************************************/
+  
+  //lendo Temperatura do RTC  
+  RTC.convertTemperature();             //convert current temperature into registers 
+  Tcc = RTC.getTemperature();           //read registers and display the temperature
+  
+  //Lendo Sensores de Temperatura e umidade
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  umidade = dht.readHumidity();
+  
+  // Read temperature as Celsius (the default)
+  temperatura = dht.readTemperature();
+  
+  if ((minu == 1) && (AuxNivel < 5))
+  {// sensor de nível só é lido no minuto 1 de cada hora 5 vezes seguidas
+    DisparaPulsoUltrassonico();                                     //Envia pulso para o sensor
+    TempoEcho = pulseIn(Echo,HIGH);                                 //Lê o tempo de retorno do sinal sonoro
+    dist = (double) (VelSomus*TempoEcho)*100/2;                     //calcula distância do sensor para a lamina de água
+    nivel = (double) 100*(dist - NivelMin)/(NivelMax - NivelMin);   //calcula nível de líquido
+    tmpDesc = tmpDisp;
+    AuxNivel++;
+    
+    //Passa infos ao Blynk
+    Blynk.virtualWrite(V3, umidade);   
+    Blynk.virtualWrite(V4, temperatura);   
+    Blynk.virtualWrite(V5, nivel);   
+  }
+  else if (minu != 1)
+  {
+    AuxNivel = 0;
+  }
+  
+  /*************************************************/
+  /*************  MOSTRANDO VARIÁVEIS  *************/
+  /*************************************************/
+  
+  
+  //escrevendo msg no terminal serial
+  Serial.print(data, DEC);
+  Serial.print(F("/"));
+  Serial.print(mes, DEC);
+  Serial.print(F("/"));
+  Serial.print(ano, DEC);
+  Serial.print(F(" - "));
+  Serial.print(daysOfTheWeek[DoW - 1]);
+  Serial.print(F(" - "));
+  Serial.print(hora, DEC);
+  Serial.print(F(":"));
+  Serial.print(minu, DEC);
+  Serial.print(F(":"));
+  Serial.println(seg, DEC);
+  
+  Serial.print(F("Dow = "));
+  Serial.println(DoW);
+
+  Serial.print(F("T (C) = "));
+  Serial.println(temperatura);
+  Serial.print(F("T_RTC (C) = "));
+  Serial.println(Tcc);
+  
+  Serial.print(F("Uar (%) = "));
+  Serial.println(umidade);
+  
+  Serial.print(F("Tempo Echo (us) = "));
+  Serial.println(TempoEcho);
+  Serial.print(F("Distancia sup (cm) = "));
+  Serial.println(dist);
+  Serial.print(F("Nivel Tq (%) = "));
+  Serial.println(nivel);
+  
+  Serial.print(F("Status Motor = "));
+  if(statusMotor == 0) Serial.println(F("Off"));
+  else Serial.println(F("On"));
+
+  Serial.print(F("valAliBut = "));
+  Serial.println(valAliBut);
+
+  Serial.println();
+  
+  //epera do loop
+  delay(800 - tmpDesc);
   
 }
 
