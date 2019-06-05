@@ -51,6 +51,7 @@ byte valAliBut = 0;                                                             
 byte tmpDisp = 10;                                                                        //Tempo de disparo do som no sensor ultrasonico (us)
 byte NivelMin = 19, NivelMax = 5;                                                         //valores de distância em m para nivel minimo e máximo do sensor
 byte AuxNivel = 0;                                                                        //Auxiliar que impede a repetição de comandos
+byte AuxMenu1 = 0, AuxMenu2 = 0;
 float nivel = 0, TempoEcho = 0, dist = 0;                                                 //nivel de líquido em %, tempo de retorno do sinal sonoro e distância da superficie da água até o senso
 float temperatura = 0, umidade = 0;                                                       //Leitura Temperaturas DHT11
 float Tcc = 0;                                                                            //Leitura Temperatura RTC
@@ -83,7 +84,177 @@ DateTime dt(2019, 05, 19, 12, 24, 0, 7);
 
 
 /**************************   Funções Blynk   ***************************/
+BLYNK_WRITE(V1)
+{
+  tmpDesc = 50;  
+  buzzFunction(tmpDesc);        //buzz
+  digitalWrite(MotorPin, LOW);  //energizo Motor
+  statusMotor = 1;
+  AuxAliBut = 1;  
 
+  mesUA = mes;
+  diaUA = data;
+  horaUA = hora;
+  minUA = minu;
+  segUA = seg;
+
+  EEPROM.write(0, mesUA);
+  EEPROM.write(1, diaUA);
+  EEPROM.write(2, horaUA);
+  EEPROM.write(3, minUA);
+}
+
+//Interação do usuário com o Terminal
+BLYNK_WRITE(V4)
+{
+  int ValMenu = param.asInt();
+  
+  if ((ValMenu == 1) && (AuxMenu1 == 0) && (AuxMenu2 == 0))
+  {// usuário digita "1" no terminal
+    terminal.print(F("Modo = "));
+    if(Modo == 0) terminal.println(F("Auto"));
+    else terminal.println(F("Manual"));
+    
+    terminal.print(F("Ultima Alimentação em "));
+    terminal.print(diaUA);
+    terminal.print(F("/"));
+    terminal.print(mesUA);
+    terminal.print(F(" - "));
+    terminal.print(horaUA);
+    terminal.print(F(":"));
+    terminal.println(minUA);
+    
+    terminal.print(F("Horarios de Alimentação automática = "));
+    for (int i = 0 ; i < nHorarios ; i++)
+    {
+      terminal.print(HorariosComer[i]);
+      terminal.print(" ");
+    }
+    terminal.println();
+    
+    terminal.print(F("Duração da Alimentação (s) = "));
+    terminal.println(duraAli);              
+  }
+  else if((ValMenu == 2) && (AuxMenu1 == 0) && (AuxMenu2 == 0))
+  {
+    terminal.print(data, DEC);
+    terminal.print(F("/"));
+    terminal.print(mes, DEC);
+    terminal.print(F("/"));
+    terminal.print(ano, DEC);
+    terminal.print(F(" - "));
+    terminal.print(daysOfTheWeek[DoW - 1]);
+    terminal.print(F(" - "));
+    terminal.print(hora, DEC);
+    terminal.print(F(":"));
+    terminal.print(minu, DEC);
+    terminal.print(F(":"));
+    terminal.println(seg, DEC);
+
+    terminal.print(F("Dow = "));
+    terminal.println(DoW);
+
+    terminal.print(F("T (C) = "));
+    terminal.println(temperatura);
+    terminal.print(F("T_RTC (C) = "));
+    terminal.println(Tcc);
+
+    terminal.print(F("Uar (%) = "));
+    terminal.println(umidade);
+
+    terminal.print(F("Tempo Echo (us) = "));
+    terminal.println(TempoEcho);
+    terminal.print(F("Distancia sup (cm) = "));
+    terminal.println(dist);
+    terminal.print(F("Nivel Tq (%) = "));
+    terminal.println(nivel);
+
+    terminal.print(F("Status Motor = "));
+    if(statusMotor == 0) terminal.println(F("Off"));
+    else terminal.println(F("On"));
+
+    terminal.print(F("valAliBut = "));
+    terminal.println(valAliBut);
+  }
+  else if ((ValMenu == 3) && (AuxMenu1 == 0) && (AuxMenu2 == 0))
+  {// usuário digita "3" no terminal
+    terminal.println();
+    terminal.println(F("Informe o parametro que deseja alterar"));
+    terminal.println(F(" 1 - Horario Alimentação 1"));
+    terminal.println(F(" 2 - Horario Alimentação 2"));
+    terminal.println(F(" 3 - Horario Alimentação 3"));
+    terminal.println(F(" 4 - Duracao da Alimentação"));
+    terminal.println(F(" 5 - Modo da Alimentação"));
+    terminal.println(F(" 6 - Sair"));
+    AuxMenu1 = 1;
+  }
+  else if ((ValMenu == 4) && (AuxMenu1 == 0) && (AuxMenu2 == 0))
+  {// usuário digita "5" no terminal
+    terminal.println();
+    terminal.println(F("Informe parametro que deseja calibrar"));
+    terminal.println(F(" 1 - Nivel Min"));
+    terminal.println(F(" 2 - Nivel Max"));
+    terminal.println(F(" 3 - Tempo Disparo Ultrasonico"));
+    terminal.println(F(" 4 - Sair"));
+    AuxMenu1 = 2;
+  }
+  
+  else if ((ValMenu == 1) && (AuxMenu1 == 1) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Horario da alimentação
+    terminal.println(F(" - Horario Alimentação 1"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(HorariosComer[0]);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 2) && (AuxMenu1 == 1) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Horario da alimentação
+    terminal.println(F(" - Horario Alimentação 2"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(HorariosComer[1]);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 3) && (AuxMenu1 == 1) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Horario da alimentação
+    terminal.println(F(" - Horario Alimentação 3"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(HorariosComer[2]);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 4) && (AuxMenu1 == 1) && (AuxMenu2 == 0))
+  {//alterar o parâmtro durção da alimentação
+    terminal.println(F(" - Durção da Alimentação (s)"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(duraAli);
+    terminal.println(F("Insira novo valor"));
+    AuxMenu2 = ValMenu;
+  }
+  else if ((ValMenu == 5) && (AuxMenu1 == 1) && (AuxMenu2 == 0))
+  {//alterar o parâmtro Modo da Alimentação
+    terminal.println(F(" - Modo da Alimentação"));
+    terminal.print(F("Valor atual de "));
+    terminal.println(Modo);
+    terminal.println(F("Insira 0 p/ Auto ou 1 p/ Manual"));
+    AuxMenu2 = ValMenu;
+  }
+  
+  
+  
+  else 
+  {// qualquer outro valor
+    terminal.clear();
+    terminal.println(F("Opções de informações:"));
+    terminal.println(F(" 1 - Parametros da Automação"));
+    terminal.println(F(" 2 - Leitura dos sensores"));
+    terminal.println(F(" 3 - Alteração de Parâmetros"));
+    terminal.println(F(" 4 - Calibração de sensores"));
+    terminal.println(F(" 5 - Limpa tela"));
+    AuxMenu1 = 0; 
+    AuxMenu2 = 0;
+  }
+}
 
 
 
@@ -129,41 +300,42 @@ void LoopReal()
   /*************************************************/
   /*************      AUTOMAÇÕES       *************/
   /*************************************************/
- 
-  for (int i = 0; i < nHorarios ; i++)
+  if (Modo == 0)
   {
-    if (hora == HorariosComer[i]) ComerAgora = 1;
-    else ComerAgora = 0;
-  }
-  
-  if ((ComerAgora == 1) && (minu == 0) && (AuxAli == 0))
-  {//hora de alimentar as gatas
-    digitalWrite(MotorPin, LOW);  //energizo Motor
-    statusMotor = 1;
-    AuxAli = 1;  
-    
-    mesUA = mes;
-    diaUA = data;
-    horaUA = hora;
-    minUA = minu;
-    segUA = seg;
+    for (int i = 0; i < nHorarios ; i++)
+    {
+      if (hora == HorariosComer[i]) ComerAgora = 1;
+      else ComerAgora = 0;
+    }
 
-    EEPROM.write(0, mesUA);
-    EEPROM.write(1, diaUA);
-    EEPROM.write(2, horaUA);
-    EEPROM.write(3, minUA);
+    if ((ComerAgora == 1) && (minu == 0) && (AuxAli == 0))
+    {//hora de alimentar as gatas
+      digitalWrite(MotorPin, LOW);  //energizo Motor
+      statusMotor = 1;
+      AuxAli = 1;  
+
+      mesUA = mes;
+      diaUA = data;
+      horaUA = hora;
+      minUA = minu;
+      segUA = seg;
+
+      EEPROM.write(0, mesUA);
+      EEPROM.write(1, diaUA);
+      EEPROM.write(2, horaUA);
+      EEPROM.write(3, minUA);
+    }
+    else if ((ComerAgora == 1) && (minu == 0) && (seg >= (segUA + duraAli)))
+    {//passou o tempo desejado do funcionamento do motor
+      digitalWrite(MotorPin, HIGH);  //desenergizo motor
+      statusMotor = 0;
+    }
+    else if (ComerAgora == 0)
+    {
+      AuxAli = 0;  
+    }
   }
-  else if ((ComerAgora == 1) && (minu == 0) && (seg >= (segUA + duraAli)))
-  {//passou o tempo desejado do funcionamento do motor
-    digitalWrite(MotorPin, HIGH);  //desenergizo motor
-    statusMotor = 0;
-  }
-  else if (ComerAgora == 0)
-  {
-    AuxAli = 0;  
-  }
-  
-  
+
   
   /*************************************************/
   /*************    AÇÃO DOS BOTÕES    *************/
@@ -273,6 +445,10 @@ void LoopReal()
   Serial.print(F("Nivel Tq (%) = "));
   Serial.println(nivel);
   
+  Serial.print(F("Modo = "));
+  if(Modo == 0) Serial.println(F("Auto"));
+  else Serial.println(F("Manual"));
+  
   Serial.print(F("Status Motor = "));
   if(statusMotor == 0) Serial.println(F("Off"));
   else Serial.println(F("On"));
@@ -352,6 +528,9 @@ void setup()
   NivelMax = EEPROM.read(5);
   tmpDisp = EEPROM.read(6);
   
+  //iniciando Modo
+  Modo = EEPROM.read(7);
+  
   //lendo nivel
   DisparaPulsoUltrassonico();                                     //Envia pulso para o sensor
   TempoEcho = pulseIn(Echo,HIGH);                                 //Lê o tempo de retorno do sinal sonoro
@@ -359,8 +538,10 @@ void setup()
   nivel = (double) 100*(dist - NivelMin)/(NivelMax - NivelMin);   //calcula nível de líquido
   Blynk.virtualWrite(V5, nivel);
 
-  //lê temperatura
+  //lê temperatura e umidade
+  umidade = dht.readHumidity();
   temperatura = dht.readTemperature();
+  Blynk.virtualWrite(V3, umidade); 
   Blynk.virtualWrite(V4, temperatura);
   
   // Setup a function to be called every second
